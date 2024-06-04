@@ -1,8 +1,16 @@
 <template>
   <div class="topbar-main-container">
     <div class="left-buttons-container">
-      <i class="bi bi-chevron-left"></i>
-      <i class="bi bi-plus-circle"></i>
+      <i
+        class="bi bi-chevron-left"
+        @mouseenter="showTooltip('Collapse Menu', $event)"
+        @mouseleave="hideTooltip"
+      ></i>
+      <i
+        class="bi bi-plus-circle"
+        @mouseenter="showTooltip('New Chat', $event)"
+        @mouseleave="hideTooltip"
+      ></i>
     </div>
     <div class="middle-title-container">
       <!-- Title of chat will go here -->
@@ -10,13 +18,29 @@
     <div class="right-logo-container">
       <img src="../../assets/borderland-logo.png" alt="logo" />
     </div>
+    <Tooltip ref="tooltip" />
   </div>
 </template>
+
 <script>
+import Tooltip from "@/components/UI/ToolTip.vue";
+
 export default {
   name: "TopBar",
+  components: {
+    Tooltip,
+  },
+  methods: {
+    showTooltip(text, event) {
+      this.$refs.tooltip.delayShow(text, event);
+    },
+    hideTooltip() {
+      this.$refs.tooltip.cancelShow();
+    },
+  },
 };
 </script>
+
 <style lang="scss" scoped>
 @import "@/scss/variables.scss";
 @import "@/scss/mixins.scss";
@@ -28,6 +52,7 @@ export default {
   font-size: 1rem;
   font-weight: 500;
   border-bottom: 1px solid $ResBorder;
+  position: relative; /* Make sure the tooltip can be positioned correctly */
   .left-buttons-container {
     display: flex;
     align-items: center;

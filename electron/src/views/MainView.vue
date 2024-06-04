@@ -13,21 +13,34 @@
         </div>
       </div>
     </div>
+    <SettingsModal v-if="isSettingsModalOpen" @close="closeSettingsModal" />
   </div>
 </template>
+
 <script>
+import { mapGetters, mapActions } from "vuex";
 import LeftSidebar from "@/components/UI/LeftSidebar.vue";
 import TopBar from "@/components/UI/TopBar.vue";
 import MainChatView from "@/components/MainView/MainChatView.vue";
+import SettingsModal from "@/components/UI/SettingsModal.vue";
+
 export default {
   name: "MainView",
   components: {
     LeftSidebar,
     TopBar,
     MainChatView,
+    SettingsModal,
+  },
+  computed: {
+    ...mapGetters(["isSettingsModalOpen"]),
+  },
+  methods: {
+    ...mapActions(["closeSettingsModal"]),
   },
 };
 </script>
+
 <style lang="scss" scoped>
 @import "@/scss/variables.scss";
 @import "@/scss/mixins.scss";

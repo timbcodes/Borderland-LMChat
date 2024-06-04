@@ -45,7 +45,7 @@
       </div>
     </div>
     <div class="settings-link">
-      <a href="#">
+      <a href="#" @click.prevent="openSettingsModal">
         <i class="bi bi-gear-fill settings-icon"></i>
         Settings
       </a>
@@ -54,6 +54,8 @@
 </template>
 
 <script>
+import { mapActions } from "vuex";
+
 export default {
   name: "LeftSidebar",
   data() {
@@ -62,6 +64,9 @@ export default {
       currentChat: null,
       previousChats: [],
     };
+  },
+  methods: {
+    ...mapActions(["openSettingsModal"]),
   },
 };
 </script>

@@ -15,4 +15,21 @@ module.exports = defineConfig({
       },
     },
   },
+  pluginOptions: {
+    electronBuilder: {
+      nodeIntegration: true,
+      externals: ["sqlite3"],
+      outputDir: "dist_electron",
+      nodeModulesPath: ["./node_modules"],
+      builderOptions: {
+        extraResources: [
+          {
+            from: "node_modules/sqlite3/lib/binding",
+            to: "node_modules/sqlite3/lib/binding",
+            filter: ["**/*"],
+          },
+        ],
+      },
+    },
+  },
 });
