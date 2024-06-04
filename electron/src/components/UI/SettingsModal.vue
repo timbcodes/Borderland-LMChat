@@ -2,14 +2,14 @@
   <div class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
       <h2>Settings</h2>
-      <form @submit.prevent="saveSettings">
+      <form @submit.prevent="handleSubmit">
         <div class="form-group">
           <label for="apiKey">API Key (leave empty if blank)</label>
           <input type="text" id="apiKey" v-model="apiKey" />
         </div>
         <div class="form-group">
-          <label for="model">Model</label>
-          <input type="text" id="model" v-model="model" />
+          <label for="url">URL</label>
+          <input type="text" id="url" v-model="url" />
         </div>
         <div class="form-group">
           <label for="temperature">Temperature</label>
@@ -31,6 +31,8 @@
   </div>
 </template>
 <script>
+import Dexie from "dexie";
+
 export default {
   name: "SettingsModal",
   data() {
@@ -41,40 +43,43 @@ export default {
       temperature: 0.7,
     };
   },
+  async mounted() {
+    const db = new Dexie("borderland-lmchat-settings");
+    db.version(1).stores({ settings: "id" });
+    const settings = await db.settings.get(1);
+    if (settings) {
+      this.apiKey = settings.apiKey;
+      this.url = settings.url;
+      this.model = settings.model;
+      this.temperature = settings.temperature;
+    } else {
+      this.saveSettings();
+    }
+  },
   methods: {
-    // async loadSettings() {
-    //   try {
-    //     const settings = await settingsService.getSettings();
-    //     this.apiKey = settings.apiKey || "";
-    //     this.url = settings.url || "";
-    //     this.model = settings.model || "";
-    //     this.temperature = settings.temperature || 0.7;
-    //   } catch (err) {
-    //     console.error("Error loading settings:", err);
-    //   }
-    // },
-    // async saveSettings() {
-    //   try {
-    //     await settingsService.updateSettings({
-    //       apiKey: this.apiKey,
-    //       url: this.url,
-    //       model: this.model,
-    //       temperature: this.temperature,
-    //     });
-    //     this.$emit("close");
-    //   } catch (err) {
-    //     console.error("Error saving settings:", err);
-    //   }
-    // },
     closeModal() {
       this.$emit("close");
     },
-  },
-  mounted() {
-    this.loadSettings();
+    async saveSettings() {
+      const db = new Dexie("borderland-lmchat-settings");
+      db.version(1).stores({ settings: "id" });
+      const settings = {
+        id: 1,
+        apiKey: this.apiKey,
+        url: this.url,
+        model: this.model,
+        temperature: this.temperature,
+      };
+      await db.settings.put(settings);
+    },
+    async handleSubmit() {
+      await this.saveSettings();
+      this.closeModal();
+    },
   },
 };
 </script>
+
 <style lang="scss" scoped>
 @import "@/scss/variables.scss";
 @import "@/scss/mixins.scss";
