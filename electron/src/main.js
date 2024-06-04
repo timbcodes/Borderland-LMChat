@@ -11,8 +11,11 @@ import VueCookies from "vue3-cookies";
 /**
  * Import Global Styles Below
  */
-import "@/scss/normalize.scss";
 import "@/scss/fonts.scss";
+import "@/scss/normalize.scss";
+import "@/scss/UniversalStyles.scss";
+import "@/scss/mixins.scss";
+import "@/scss/variables.scss";
 
 /**
  * Import External Libraries Below
