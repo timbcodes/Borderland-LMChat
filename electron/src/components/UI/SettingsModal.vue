@@ -31,7 +31,6 @@
   </div>
 </template>
 <script>
-import settingsService from "@/js/services/settings.service";
 export default {
   name: "SettingsModal",
   data() {
@@ -43,30 +42,30 @@ export default {
     };
   },
   methods: {
-    async loadSettings() {
-      try {
-        const settings = await settingsService.getSettings();
-        this.apiKey = settings.apiKey || "";
-        this.url = settings.url || "";
-        this.model = settings.model || "";
-        this.temperature = settings.temperature || 0.7;
-      } catch (err) {
-        console.error("Error loading settings:", err);
-      }
-    },
-    async saveSettings() {
-      try {
-        await settingsService.updateSettings({
-          apiKey: this.apiKey,
-          url: this.url,
-          model: this.model,
-          temperature: this.temperature,
-        });
-        this.$emit("close");
-      } catch (err) {
-        console.error("Error saving settings:", err);
-      }
-    },
+    // async loadSettings() {
+    //   try {
+    //     const settings = await settingsService.getSettings();
+    //     this.apiKey = settings.apiKey || "";
+    //     this.url = settings.url || "";
+    //     this.model = settings.model || "";
+    //     this.temperature = settings.temperature || 0.7;
+    //   } catch (err) {
+    //     console.error("Error loading settings:", err);
+    //   }
+    // },
+    // async saveSettings() {
+    //   try {
+    //     await settingsService.updateSettings({
+    //       apiKey: this.apiKey,
+    //       url: this.url,
+    //       model: this.model,
+    //       temperature: this.temperature,
+    //     });
+    //     this.$emit("close");
+    //   } catch (err) {
+    //     console.error("Error saving settings:", err);
+    //   }
+    // },
     closeModal() {
       this.$emit("close");
     },

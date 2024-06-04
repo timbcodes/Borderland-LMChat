@@ -3,7 +3,6 @@
 import { app, protocol, BrowserWindow } from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS3_DEVTOOLS } from "electron-devtools-installer";
-import "./database";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
