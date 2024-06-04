@@ -5,26 +5,41 @@
         class="left-sidebar-container"
         :class="{ collapsed: isSidebarCollapsed }"
       >
-        <LeftSidebar />
+        <LeftSidebar
+          @chat-selected="loadChatMessages"
+          :currentChat="currentChat"
+          :previousChats="previousChats"
+          @delete-current-chat="deleteCurrentChat"
+        />
       </div>
       <div class="main-content-container">
         <div class="top-bar-container">
-          <TopBar />
+          <TopBar
+            @create-new-chat="createNewChat"
+            :currentChat="currentChat"
+            @delete-current-chat="deleteCurrentChat"
+          />
         </div>
         <div class="main-chat-view-container">
-          <MainChatView />
+          <MainChatView
+            ref="mainChatView"
+            @new-chat-created="updateCurrentChat"
+            @move-to-previous-chats="addPreviousChat"
+          />
         </div>
       </div>
     </div>
     <SettingsModal v-if="isSettingsModalOpen" @close="closeSettingsModal" />
   </div>
 </template>
+
 <script>
 import { mapGetters, mapActions } from "vuex";
 import LeftSidebar from "@/components/UI/LeftSidebar.vue";
 import TopBar from "@/components/UI/TopBar.vue";
 import MainChatView from "@/components/MainView/MainChatView.vue";
 import SettingsModal from "@/components/UI/SettingsModal.vue";
+import db from "@/db";
 
 export default {
   name: "MainView",
@@ -34,11 +49,51 @@ export default {
     MainChatView,
     SettingsModal,
   },
-  computed: {
-    ...mapGetters(["isSettingsModalOpen", "isSidebarCollapsed"]),
+  data() {
+    return {
+      currentChat: null,
+      previousChats: [],
+    };
   },
   methods: {
     ...mapActions(["closeSettingsModal"]),
+    async loadChatMessages(chatId) {
+      const messages = await db.messages.where({ chatId }).toArray();
+      this.$refs.mainChatView.setMessages(messages);
+      const chat = await db.chats.get(chatId);
+      this.updateCurrentChat(chat);
+    },
+    updateCurrentChat(chat) {
+      if (this.currentChat) {
+        this.previousChats.push(this.currentChat);
+      }
+      this.currentChat = chat;
+      this.previousChats = this.previousChats.filter((c) => c.id !== chat.id);
+    },
+    addPreviousChat(chat) {
+      this.previousChats.push(chat);
+    },
+    async createNewChat() {
+      if (this.currentChat) {
+        this.addPreviousChat(this.currentChat);
+        this.$refs.mainChatView.clearChat();
+      }
+      await this.$refs.mainChatView.createNewChat();
+    },
+    async deleteCurrentChat(chatId) {
+      if (this.currentChat && this.currentChat.id === chatId) {
+        await db.chats.delete(chatId);
+        await db.messages.where({ chatId }).delete();
+        this.currentChat = null;
+        this.$refs.mainChatView.clearChat();
+      }
+      this.previousChats = this.previousChats.filter(
+        (chat) => chat.id !== chatId
+      );
+    },
+  },
+  computed: {
+    ...mapGetters(["isSettingsModalOpen", "isSidebarCollapsed"]),
   },
 };
 </script>

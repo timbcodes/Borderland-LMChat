@@ -10,12 +10,21 @@
       ></i>
       <i
         class="bi bi-plus-circle"
+        @click="createNewChat"
         @mouseenter="showTooltip('New Chat', $event)"
+        @mouseleave="hideTooltip"
+      ></i>
+      <i
+        class="bi bi-trash-fill"
+        v-if="currentChat"
+        @click="deleteCurrentChat"
+        @mouseenter="showTooltip('Delete Current Chat', $event)"
         @mouseleave="hideTooltip"
       ></i>
     </div>
     <div class="middle-title-container">
-      <!-- Title of chat will go here -->
+      <span v-if="currentChat">{{ truncate(currentChat.uuid) }}</span>
+      <span v-else>No Chat Selected</span>
     </div>
     <div class="right-logo-container">
       <img src="../../assets/borderland-logo.png" alt="logo" />
@@ -27,10 +36,14 @@
 <script>
 import { mapGetters, mapActions } from "vuex";
 import Tooltip from "@/components/UI/ToolTip.vue";
+
 export default {
   name: "TopBar",
   components: {
     Tooltip,
+  },
+  props: {
+    currentChat: Object,
   },
   methods: {
     ...mapActions(["toggleSidebar"]),
@@ -39,6 +52,19 @@ export default {
     },
     hideTooltip() {
       this.$refs.tooltip.cancelShow();
+    },
+    createNewChat() {
+      this.$emit("create-new-chat");
+    },
+    deleteCurrentChat() {
+      this.$emit("delete-current-chat", this.currentChat.id);
+    },
+    truncate(text) {
+      const maxLength = 15;
+      if (text.length > maxLength) {
+        return text.substring(0, maxLength) + "...";
+      }
+      return text;
     },
   },
   computed: {
@@ -71,6 +97,11 @@ export default {
         transform: rotate(180deg);
       }
     }
+  }
+  .middle-title-container {
+    display: flex;
+    justify-content: center;
+    flex: 1;
   }
   .right-logo-container {
     img {

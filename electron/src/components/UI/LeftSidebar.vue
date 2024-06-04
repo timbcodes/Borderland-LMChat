@@ -32,15 +32,27 @@
     <div class="chat-sections">
       <div class="current-chat">
         <h2>Current Chat</h2>
-        <span v-if="currentChat">{{ currentChat.name }}</span>
+        <div class="current-chat-item" v-if="currentChat">
+          <i
+            class="bi bi-trash-fill delete-icon"
+            @click="$emit('delete-current-chat', currentChat.id)"
+          ></i>
+          <span>{{ truncate(currentChat.uuid) }}</span>
+        </div>
         <span v-else>No current chat</span>
       </div>
       <div class="previous-chats">
         <h2>Previous Chats</h2>
-        <div v-if="previousChats.length > 0">
-          <span v-for="chat in previousChats" :key="chat.id">{{
-            chat.name
-          }}</span>
+        <div v-if="filteredChats.length > 0">
+          <div v-for="chat in filteredChats" :key="chat.id" class="chat-item">
+            <span @click="selectChat(chat)">
+              {{ truncate(chat.uuid) }}
+            </span>
+            <i
+              class="bi bi-trash-fill delete-icon"
+              @click="deleteChat(chat.id)"
+            ></i>
+          </div>
         </div>
         <span v-else>No previous chats</span>
       </div>
@@ -56,18 +68,67 @@
 
 <script>
 import { mapActions } from "vuex";
+import db from "@/db";
 
 export default {
   name: "LeftSidebar",
+  props: {
+    currentChat: Object,
+    previousChats: Array,
+  },
   data() {
     return {
       searchQuery: "",
-      currentChat: null,
-      previousChats: [],
+      localPreviousChats: [],
     };
+  },
+  computed: {
+    filteredChats() {
+      if (!this.searchQuery) {
+        return this.localPreviousChats;
+      }
+      return this.localPreviousChats.filter((chat) =>
+        chat.uuid.includes(this.searchQuery)
+      );
+    },
   },
   methods: {
     ...mapActions(["openSettingsModal"]),
+    async loadChats() {
+      this.localPreviousChats = await db.chats.toArray();
+    },
+    async selectChat(chat) {
+      this.$emit("chat-selected", chat.id); // Emit event to parent component
+    },
+    async deleteChat(chatId) {
+      await db.chats.delete(chatId);
+      await db.messages.where({ chatId }).delete();
+      this.localPreviousChats = this.localPreviousChats.filter(
+        (chat) => chat.id !== chatId
+      );
+      if (this.currentChat && this.currentChat.id === chatId) {
+        this.$emit("chat-deleted"); // Emit event to clear current chat
+      }
+    },
+    truncate(text) {
+      const maxLength = 15;
+      if (text.length > maxLength) {
+        return text.substring(0, maxLength) + "...";
+      }
+      return text;
+    },
+  },
+  watch: {
+    previousChats: {
+      handler(newChats) {
+        this.localPreviousChats = [...newChats];
+      },
+      immediate: true,
+      deep: true,
+    },
+  },
+  async mounted() {
+    await this.loadChats();
   },
 };
 </script>
@@ -167,6 +228,44 @@ export default {
       span {
         font-size: 0.8rem;
         font-weight: 100;
+        cursor: pointer;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      .current-chat-item {
+        display: flex;
+        align-items: center;
+        position: relative;
+
+        &:hover .delete-icon {
+          opacity: 1;
+        }
+
+        .delete-icon {
+          opacity: 0;
+          cursor: pointer;
+          transition: opacity 0.3s ease;
+          margin-right: 0.5rem;
+        }
+      }
+
+      .chat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+
+        &:hover .delete-icon {
+          opacity: 1;
+        }
+
+        .delete-icon {
+          opacity: 0;
+          cursor: pointer;
+          transition: opacity 0.3s ease;
+        }
       }
     }
   }

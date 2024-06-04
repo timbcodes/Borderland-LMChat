@@ -18,7 +18,11 @@
       <p>What can I help you with today?</p>
     </div>
     <div v-else class="chat-messages" ref="chatMessages">
-      <!-- Messages will be dynamically rendered here -->
+      <div v-for="(msg, index) in messages" :key="index" class="chat-message">
+        <div class="message-content">
+          {{ msg.text }}
+        </div>
+      </div>
     </div>
     <div class="chat-input-container">
       <div class="chat-input-wrapper">
@@ -37,17 +41,70 @@
     </div>
   </div>
 </template>
+
 <script>
+import { v4 as uuidv4 } from "uuid";
+import db from "@/db";
+
 export default {
   name: "MainChatView",
   data() {
     return {
       currentChat: null,
       message: "",
+      messages: [], // Messages array to store chat messages
       maxHeight: 150, // Maximum height for the text area
     };
   },
   methods: {
+    async createNewChat() {
+      if (this.currentChat) {
+        // Add the current chat to previous chats before creating a new one
+        this.$emit("move-to-previous-chats", this.currentChat);
+      }
+      const newChat = {
+        uuid: uuidv4(),
+        createdAt: new Date(),
+      };
+      const chatId = await db.chats.add(newChat);
+      this.currentChat = { id: chatId, ...newChat };
+      this.$emit("new-chat-created", this.currentChat);
+    },
+    async addMessageToChat(text) {
+      const newMessage = {
+        chatId: this.currentChat.id,
+        text,
+        createdAt: new Date(),
+      };
+      await db.messages.add(newMessage);
+      this.messages.push(newMessage);
+    },
+    async sendMessage() {
+      if (this.message.trim()) {
+        if (!this.currentChat) {
+          await this.createNewChat();
+        }
+        await this.addMessageToChat(this.message);
+        // Scroll to the bottom of the chat messages
+        this.$nextTick(() => {
+          const chatMessages = this.$refs.chatMessages;
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+        // Clear the message input
+        this.message = "";
+        this.$refs.chatInput.style.height = "3rem"; // Reset height after sending the message
+      }
+    },
+    async loadChatMessages(chatId) {
+      this.messages = await db.messages.where({ chatId }).toArray();
+    },
+    setMessages(messages) {
+      this.messages = messages;
+    },
+    clearChat() {
+      this.currentChat = null;
+      this.messages = [];
+    },
     resizeTextarea() {
       const textarea = this.$refs.chatInput;
       textarea.style.height = "auto"; // Reset height
@@ -60,16 +117,15 @@ export default {
         textarea.style.height = "3rem"; // Set to 3rem when there's no text
       }
     },
-    sendMessage() {
-      if (this.message.trim()) {
-        // Handle message submission logic here
-        this.message = "";
-        this.$refs.chatInput.style.height = "3rem"; // Reset height after sending the message
-      }
-    },
+  },
+  async mounted() {
+    // Example: Load messages for an existing chat
+    const existingChatId = 1; // Replace with your logic to get an existing chat ID
+    await this.loadChatMessages(existingChatId);
   },
 };
 </script>
+
 <style lang="scss" scoped>
 @import "@/scss/variables.scss";
 @import "@/scss/mixins.scss";
@@ -121,7 +177,22 @@ export default {
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
-    background-color: $ResGrey;
+    display: flex;
+    flex-direction: column-reverse; /* Start from bottom and work up */
+    background-color: $ResSmoke; /* Ensure the background color remains consistent */
+    .chat-message {
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: flex-end; /* Align user messages to the right */
+      .message-content {
+        background-color: $ResWhite;
+        border-radius: $ResRoundedEdges;
+        padding: 0.5rem;
+        font-family: $mainFont;
+        color: $ResSmoke; /* Ensure text color is correct */
+        max-width: 40%; /* Reduce the width of the message bubbles */
+      }
+    }
   }
   .chat-input-container {
     display: flex;
