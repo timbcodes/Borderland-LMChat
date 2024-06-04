@@ -22,7 +22,7 @@ import "@/scss/variables.scss";
  */
 import vClickOutside from "click-outside-vue3";
 import { Vue3Mq } from "vue3-mq";
-import { BootstrapIconsPlugin } from "bootstrap-icons-vue";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const app = createApp(App)
   .use(store)
@@ -30,7 +30,6 @@ const app = createApp(App)
   .use(VueCookies)
   .use(vClickOutside)
   .use(Vue3Mq, {
-    preset: "devices", // default
-  })
-  .use(BootstrapIconsPlugin);
+    preset: "devices",
+  });
 app.mount("#app");
