@@ -1,7 +1,10 @@
 <template>
   <div class="main-container">
     <div class="main-window-container">
-      <div class="left-sidebar-container">
+      <div
+        class="left-sidebar-container"
+        :class="{ collapsed: isSidebarCollapsed }"
+      >
         <LeftSidebar />
       </div>
       <div class="main-content-container">
@@ -16,7 +19,6 @@
     <SettingsModal v-if="isSettingsModalOpen" @close="closeSettingsModal" />
   </div>
 </template>
-
 <script>
 import { mapGetters, mapActions } from "vuex";
 import LeftSidebar from "@/components/UI/LeftSidebar.vue";
@@ -33,7 +35,7 @@ export default {
     SettingsModal,
   },
   computed: {
-    ...mapGetters(["isSettingsModalOpen"]),
+    ...mapGetters(["isSettingsModalOpen", "isSidebarCollapsed"]),
   },
   methods: {
     ...mapActions(["closeSettingsModal"]),
@@ -52,18 +54,26 @@ export default {
     height: 100%;
     .left-sidebar-container {
       width: 180px;
-      height: 100%;
-      border-right: 1px solid $ResBorder;
+      transition: width 0.3s ease;
+      overflow: hidden;
+      &.collapsed {
+        width: 0;
+      }
     }
     .main-content-container {
-      width: calc(100% - 150px);
+      width: calc(100% - 180px);
+      transition: width 0.3s ease;
       height: 100%;
+      transition: width 0.3s ease;
       .top-bar-container {
         height: 3rem;
       }
       .main-chat-view-container {
         height: calc(100% - 3rem);
       }
+    }
+    .left-sidebar-container.collapsed + .main-content-container {
+      width: 100%;
     }
   }
 }

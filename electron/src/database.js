@@ -1,12 +1,21 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
-const fs = require("fs");
 
 // Database file path
-const dbPath = path.join(__dirname, "data", "database.sqlite");
+const dbPath = path.join(__dirname, "database.sqlite");
+
+// Open the database connection
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error("Error opening database:", err);
+  } else {
+    console.log("Connected to the SQLite database.");
+    createTables();
+  }
+});
 
 // Function to create tables
-const createTables = (db) => {
+const createTables = () => {
   db.serialize(() => {
     db.run(`
       CREATE TABLE IF NOT EXISTS settings (
@@ -15,6 +24,7 @@ const createTables = (db) => {
         value TEXT
       )
     `);
+
     db.run(`
       CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,6 +33,7 @@ const createTables = (db) => {
         title TEXT
       )
     `);
+
     db.run(`
       CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,30 +44,9 @@ const createTables = (db) => {
         FOREIGN KEY(chat_id) REFERENCES chats(id)
       )
     `);
+
+    console.log("Database tables created successfully");
   });
 };
 
-// Initialize the database
-const initializeDatabase = () => {
-  const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-      console.error("Error opening database:", err);
-    } else {
-      console.log("Database opened successfully");
-      createTables(db);
-    }
-  });
-  return db;
-};
-
-// Check if the database file exists and initialize it if necessary
-if (!fs.existsSync(dbPath)) {
-  console.log("Database file does not exist, initializing...");
-  initializeDatabase();
-} else {
-  console.log("Database file exists, opening...");
-}
-
-// Export the database connection
-const db = new sqlite3.Database(dbPath);
 module.exports = db;

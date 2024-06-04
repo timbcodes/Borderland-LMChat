@@ -3,6 +3,7 @@ import { createStore } from "vuex";
 export default createStore({
   state: {
     isSettingsModalOpen: false,
+    isSidebarCollapsed: false,
   },
   mutations: {
     openSettingsModal(state) {
@@ -10,6 +11,9 @@ export default createStore({
     },
     closeSettingsModal(state) {
       state.isSettingsModalOpen = false;
+    },
+    toggleSidebar(state) {
+      state.isSidebarCollapsed = !state.isSidebarCollapsed;
     },
   },
   actions: {
@@ -19,8 +23,12 @@ export default createStore({
     closeSettingsModal({ commit }) {
       commit("closeSettingsModal");
     },
+    toggleSidebar({ commit }) {
+      commit("toggleSidebar");
+    },
   },
   getters: {
     isSettingsModalOpen: (state) => state.isSettingsModalOpen,
+    isSidebarCollapsed: (state) => state.isSidebarCollapsed,
   },
 });

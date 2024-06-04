@@ -3,6 +3,8 @@
     <div class="left-buttons-container">
       <i
         class="bi bi-chevron-left"
+        :class="{ rotated: isSidebarCollapsed }"
+        @click="toggleSidebar"
         @mouseenter="showTooltip('Collapse Menu', $event)"
         @mouseleave="hideTooltip"
       ></i>
@@ -23,20 +25,24 @@
 </template>
 
 <script>
+import { mapGetters, mapActions } from "vuex";
 import Tooltip from "@/components/UI/ToolTip.vue";
-
 export default {
   name: "TopBar",
   components: {
     Tooltip,
   },
   methods: {
+    ...mapActions(["toggleSidebar"]),
     showTooltip(text, event) {
       this.$refs.tooltip.delayShow(text, event);
     },
     hideTooltip() {
       this.$refs.tooltip.cancelShow();
     },
+  },
+  computed: {
+    ...mapGetters(["isSidebarCollapsed"]),
   },
 };
 </script>
@@ -60,6 +66,10 @@ export default {
       margin-right: 1rem;
       cursor: pointer;
       color: $ResPurple;
+      transition: transform 0.3s ease;
+      &.rotated {
+        transform: rotate(180deg);
+      }
     }
   }
   .right-logo-container {

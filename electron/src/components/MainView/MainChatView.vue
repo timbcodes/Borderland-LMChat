@@ -1,6 +1,23 @@
 <template>
   <div class="chat-app">
-    <div class="chat-messages" ref="chatMessages">
+    <div v-if="!currentChat" class="no-chat-view">
+      <div class="logo-container">
+        <h1>Lumos</h1>
+        <div class="icon-container">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              d="M10 1a6 6 0 0 0-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.644a.75.75 0 0 0 .572.729 6.016 6.016 0 0 0 2.856 0A.75.75 0 0 0 12 15.1v-.644c0-1.013.762-1.957 1.815-2.825A6 6 0 0 0 10 1ZM8.863 17.414a.75.75 0 0 0-.226 1.483 9.066 9.066 0 0 0 2.726 0 .75.75 0 0 0-.226-1.483 7.553 7.553 0 0 1-2.274 0Z"
+            />
+          </svg>
+        </div>
+      </div>
+      <p>What can I help you with today?</p>
+    </div>
+    <div v-else class="chat-messages" ref="chatMessages">
       <!-- Messages will be dynamically rendered here -->
     </div>
     <div class="chat-input-container">
@@ -22,9 +39,10 @@
 </template>
 <script>
 export default {
-  name: "ChatApp",
+  name: "MainChatView",
   data() {
     return {
+      currentChat: null,
       message: "",
       maxHeight: 150, // Maximum height for the text area
     };
@@ -53,14 +71,52 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-@import "@/scss/variables.scss"; // Import your variables
-@import "@/scss/mixins.scss"; // Import your mixins
+@import "@/scss/variables.scss";
+@import "@/scss/mixins.scss";
 .chat-app {
   display: flex;
   flex-direction: column;
   height: 100%;
   background-color: $ResSmoke;
   font-family: $mainFont;
+  .no-chat-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        font-family: "Quicksand", sans-serif;
+        margin-right: 1rem;
+      }
+      .icon-container {
+        background-color: $ResWhite;
+        border-radius: $ResRoundedEdges;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        svg {
+          width: 24px;
+          height: 24px;
+          color: $ResPurple;
+        }
+      }
+    }
+    p {
+      font-size: 1.2rem;
+      font-weight: 400;
+    }
+  }
   .chat-messages {
     flex: 1;
     padding: 1rem;
@@ -71,12 +127,12 @@ export default {
     display: flex;
     justify-content: center;
     padding: 0.5rem;
-    background-color: $ResGrey;
+    background-color: $ResSmoke;
     position: relative;
     .chat-input-wrapper {
       position: relative;
       display: flex;
-      align-items: flex-end; /* Align items to the bottom */
+      align-items: flex-end;
       width: 100%;
       max-width: 600px;
     }
@@ -85,28 +141,28 @@ export default {
       padding: 0.5rem 2.5rem 0.5rem 0.5rem;
       border: 1px solid $ResBorder;
       border-radius: $ResRoundedEdges;
-      resize: none; /* Prevent manual resizing */
-      overflow: hidden; /* Hide the scrollbar */
-      max-height: 150px; /* Ensure scrolling after max-height */
+      resize: none;
+      overflow: hidden;
+      max-height: 150px;
       background-color: $ResLighterGrey;
       color: $ResWhite;
-      font-family: $mainFont; /* Use the standard font */
-      height: 3rem; /* Initial height */
-      transition: height 0.2s; /* Smooth transition for height change */
+      font-family: $mainFont;
+      height: 3rem;
+      transition: height 0.2s;
       &:focus {
         outline: none;
         border-color: $ResPurple;
       }
       &::placeholder {
         color: $ResWhite;
-        text-align: start; /* Align placeholder text to flex-start */
-        vertical-align: middle; /* Center vertically */
+        text-align: start;
+        vertical-align: middle;
       }
     }
     .chat-submit-button {
       position: absolute;
-      right: 0.5rem; /* Position inside the chat input */
-      bottom: 0.5rem; /* Align to the bottom */
+      right: 0.5rem;
+      bottom: 0.5rem;
       background-color: $ResPurple;
       border: none;
       border-radius: 50%;
@@ -118,7 +174,7 @@ export default {
       justify-content: center;
       cursor: pointer;
       i {
-        font-size: 0.875rem; /* Adjust the icon size */
+        font-size: 0.875rem;
       }
       &:hover {
         background-color: $ResDarkPurple;
