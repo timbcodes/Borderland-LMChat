@@ -33,11 +33,11 @@
       <div class="current-chat">
         <h2>Current Chat</h2>
         <div class="current-chat-item" v-if="currentChat">
+          <span>{{ truncate(currentChat.uuid) }}</span>
           <i
             class="bi bi-trash-fill delete-icon"
             @click="$emit('delete-current-chat', currentChat.id)"
           ></i>
-          <span>{{ truncate(currentChat.uuid) }}</span>
         </div>
         <span v-else>No current chat</span>
       </div>
@@ -98,7 +98,11 @@ export default {
       this.localPreviousChats = await db.chats.toArray();
     },
     async selectChat(chat) {
-      this.$emit("chat-selected", chat.uuid); // Emit UUID instead of chat ID
+      this.$emit("chat-selected", chat); // Emit the chat object instead of UUID
+      this.localPreviousChats = this.localPreviousChats.filter(
+        (c) => c.id !== chat.id
+      );
+      this.$emit("update-previous-chats", this.localPreviousChats);
     },
     async deleteChat(chatId) {
       await db.chats.delete(chatId);
@@ -236,6 +240,7 @@ export default {
 
       .current-chat-item {
         display: flex;
+        justify-content: space-between;
         align-items: center;
         position: relative;
 
@@ -265,6 +270,7 @@ export default {
           opacity: 0;
           cursor: pointer;
           transition: opacity 0.3s ease;
+          margin-right: 0.5rem;
         }
       }
     }

@@ -23,6 +23,7 @@
     "click-outside-vue3": "^4.0.1",
     "core-js": "^3.8.3",
     "dexie": "^4.0.7",
+    "electron-store": "^9.0.0",
     "express-session": "^1.17.3",
     "joi": "^17.11.0",
     "js-logger": "^1.6.1",

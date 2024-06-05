@@ -20,6 +20,12 @@
             step="0.01"
           />
         </div>
+        <div class="form-group">
+          <label for="systemPrompt"
+            >System Prompt (leave blank to use default)</label
+          >
+          <textarea id="systemPrompt" v-model="systemPrompt"></textarea>
+        </div>
         <div class="form-actions">
           <button type="button" class="cancel-button" @click="closeModal">
             Cancel
@@ -41,6 +47,7 @@ export default {
       url: "",
       model: "",
       temperature: 0.7,
+      systemPrompt: "",
     };
   },
   async mounted() {
@@ -52,6 +59,7 @@ export default {
       this.url = settings.url;
       this.model = settings.model;
       this.temperature = settings.temperature;
+      this.systemPrompt = settings.systemPrompt;
     } else {
       this.saveSettings();
     }
@@ -69,6 +77,7 @@ export default {
         url: this.url,
         model: this.model,
         temperature: this.temperature,
+        systemPrompt: this.systemPrompt,
       };
       await db.settings.put(settings);
     },
@@ -128,6 +137,22 @@ export default {
     border: 1px solid $ResBorder;
     background-color: $ResLighterGrey;
     color: $ResWhite;
+
+    &:focus {
+      outline: none;
+      border-color: $ResPurple;
+    }
+  }
+
+  textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: $ResRoundedEdges;
+    border: 1px solid $ResBorder;
+    background-color: $ResLighterGrey;
+    color: $ResWhite;
+    resize: none;
+    min-height: 100px;
 
     &:focus {
       outline: none;

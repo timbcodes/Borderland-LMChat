@@ -1,6 +1,6 @@
 <template>
   <div class="chat-app">
-    <div v-if="!currentChat" class="no-chat-view">
+    <div v-if="!currentChat && messages.length === 0" class="no-chat-view">
       <div class="logo-container">
         <h1>Lumos</h1>
         <div class="icon-container">
@@ -96,10 +96,11 @@ export default {
         this.$refs.chatInput.style.height = "3rem"; // Reset height after sending the message
       }
     },
-    async loadChatMessages(chatId) {
-      console.log(`Loading messages for chatId: ${chatId}`); // Debugging statement
-      this.messages = await db.messages.where({ chatId }).toArray();
+    async loadChatMessages(chat) {
+      console.log(`Loading messages for chatId: ${chat.id}`); // Debugging statement
+      this.messages = await db.messages.where({ chatId: chat.id }).toArray();
       console.log("Loaded messages:", this.messages); // Debugging statement
+      this.currentChat = chat; // Set the current chat
     },
     setMessages(messages) {
       this.messages = messages;

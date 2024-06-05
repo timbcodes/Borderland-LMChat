@@ -10,6 +10,7 @@
           :currentChat="currentChat"
           :previousChats="previousChats"
           @delete-current-chat="deleteCurrentChat"
+          @update-previous-chats="updatePreviousChats"
         />
       </div>
       <div class="main-content-container">
@@ -57,8 +58,7 @@ export default {
   },
   methods: {
     ...mapActions(["closeSettingsModal"]),
-    async loadChatMessages(chatUuid) {
-      const chat = await db.chats.where({ uuid: chatUuid }).first();
+    async loadChatMessages(chat) {
       if (chat) {
         const messages = await db.messages.where({ chatId: chat.id }).toArray();
         this.updateCurrentChat(chat);
@@ -76,6 +76,9 @@ export default {
       if (!this.previousChats.find((c) => c.id === chat.id)) {
         this.previousChats.push(chat);
       }
+    },
+    updatePreviousChats(chats) {
+      this.previousChats = chats;
     },
     async createNewChat() {
       if (this.currentChat) {
