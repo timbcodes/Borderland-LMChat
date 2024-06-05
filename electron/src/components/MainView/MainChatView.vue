@@ -18,9 +18,18 @@
       <p>What can I help you with today?</p>
     </div>
     <div v-else class="chat-messages" ref="chatMessages">
-      <div v-for="(msg, index) in messages" :key="index" class="chat-message">
-        <div class="message-content">
-          {{ msg.text }}
+      <div
+        v-for="(msg, index) in messages"
+        :key="index"
+        class="chat-message-wrapper"
+      >
+        <div
+          :class="[
+            'chat-message',
+            msg.role === 'user' ? 'user-message' : 'system-message',
+          ]"
+        >
+          <div class="message-content" v-html="msg.text"></div>
         </div>
       </div>
     </div>
@@ -30,11 +39,16 @@
           v-model="message"
           @input="resizeTextarea"
           @keydown.enter.prevent="sendMessage"
-          placeholder="Ask anything!"
+          :placeholder="isLoading ? 'Waiting for response...' : 'Ask anything!'"
+          :disabled="isLoading"
           class="chat-input"
           ref="chatInput"
         ></textarea>
-        <button @click="sendMessage" class="chat-submit-button">
+        <button
+          @click="sendMessage"
+          :disabled="isLoading"
+          class="chat-submit-button"
+        >
           <i class="bi bi-send"></i>
         </button>
       </div>
@@ -45,6 +59,8 @@
 <script>
 import { v4 as uuidv4 } from "uuid";
 import db from "@/db";
+import { parseMarkdown } from "@/js/utils/markdown.utils";
+import axios from "axios";
 
 export default {
   name: "MainChatView",
@@ -54,6 +70,7 @@ export default {
       message: "",
       messages: [], // Messages array to store chat messages
       maxHeight: 150, // Maximum height for the text area
+      isLoading: false, // Loading state for the chat
     };
   },
   methods: {
@@ -70,18 +87,19 @@ export default {
       this.currentChat = { id: chatId, ...newChat };
       this.$emit("new-chat-created", this.currentChat);
     },
-    async addMessageToChat(text) {
+    async addMessageToChat(text, role = "user") {
       const newMessage = {
         chatId: this.currentChat.id,
         text,
+        role,
         createdAt: new Date(),
       };
-      console.log("Saving message:", newMessage); // Add this line
+      console.log("Saving message:", newMessage);
       await db.messages.add(newMessage);
-      this.messages.push(newMessage);
+      this.messages.unshift(newMessage); // Add new message at the beginning
     },
     async sendMessage() {
-      if (this.message.trim()) {
+      if (this.message.trim() && !this.isLoading) {
         if (!this.currentChat) {
           await this.createNewChat();
         }
@@ -91,14 +109,78 @@ export default {
           const chatMessages = this.$refs.chatMessages;
           chatMessages.scrollTop = chatMessages.scrollHeight;
         });
-        // Clear the message input
+
+        this.isLoading = true;
+        const settings = await db.settings.get(1);
+        const apiKey = settings ? settings.apiKey : null;
+        const url = settings ? settings.url + "/chat/completions" : "";
+        const temperature = settings ? settings.temperature : 0.7;
+        const systemPrompt = settings ? settings.systemPrompt : "";
+
+        const userMessage = this.message.trim(); // Store the user's message in a separate variable
+        const messages = [{ role: "user", content: userMessage }];
+        if (systemPrompt) {
+          messages.unshift({ role: "system", content: systemPrompt });
+        }
+        console.log("Sending messages:", messages); // Debugging statement
+
+        // Clear the message input after storing the user's message
         this.message = "";
         this.$refs.chatInput.style.height = "3rem"; // Reset height after sending the message
+
+        const requestBody = {
+          messages,
+          temperature,
+          max_tokens: -1,
+          stream: false, // Set stream to false
+        };
+
+        const headers = {};
+
+        if (apiKey) {
+          headers["x-api-key"] = apiKey;
+        }
+
+        try {
+          const response = await axios.post(url, requestBody, {
+            headers,
+          });
+
+          if (response.status === 200) {
+            const assistantMessage = response.data.choices[0].message.content;
+            await this.addMessageToChat(assistantMessage, "system");
+          } else {
+            console.error("Error:", response.statusText);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
+
+        this.isLoading = false;
+      }
+    },
+    async streamResponse(stream) {
+      const textDecoder = new TextDecoder("utf-8");
+      let messageText = "";
+
+      const reader = stream.getReader();
+      let { value, done } = await reader.read();
+
+      while (!done) {
+        const chunk = textDecoder.decode(value);
+        messageText += chunk;
+
+        // Update the chat message in real-time
+        this.messages[this.messages.length - 1].text =
+          parseMarkdown(messageText);
+
+        ({ value, done } = await reader.read());
       }
     },
     async loadChatMessages(chat) {
       console.log(`Loading messages for chatId: ${chat.id}`); // Debugging statement
       this.messages = await db.messages.where({ chatId: chat.id }).toArray();
+      this.messages.reverse(); // Reverse to show latest messages at the bottom
       console.log("Loaded messages:", this.messages); // Debugging statement
       this.currentChat = chat; // Set the current chat
     },
@@ -123,10 +205,16 @@ export default {
     },
   },
   async mounted() {
-    console.log(db.messages); // Debugging statement
-    // Example: Load messages for an existing chat
-    // const existingChatId = 1; // Replace with your logic to get an existing chat ID
-    // await this.loadChatMessages(existingChatId);
+    const settings = await db.settings.get(1);
+    if (settings) {
+      this.apiKey = settings.apiKey;
+      this.url = settings.url;
+      this.temperature = settings.temperature;
+      this.systemPrompt = settings.systemPrompt;
+    } else {
+      console.log("Settings not found");
+      // Handle the case when settings are not found, e.g., show an error message or set default values
+    }
   },
 };
 </script>
@@ -185,17 +273,25 @@ export default {
     display: flex;
     flex-direction: column-reverse; /* Start from bottom and work up */
     background-color: $ResSmoke; /* Ensure the background color remains consistent */
+    .chat-message-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
     .chat-message {
       margin-bottom: 1rem;
       display: flex;
       justify-content: flex-end; /* Align user messages to the right */
       .message-content {
-        background-color: $ResWhite;
+        background-color: $ResBlack; /* Dark background for messages */
         border-radius: $ResRoundedEdges;
+        border: 1px solid $ResPurple;
         padding: 0.5rem;
         font-family: $mainFont;
-        color: $ResSmoke; /* Ensure text color is correct */
+        color: $ResWhite; /* White text color */
         max-width: 40%; /* Reduce the width of the message bubbles */
+      }
+      &.system-message {
+        justify-content: flex-start; /* Align system messages to the left */
       }
     }
   }

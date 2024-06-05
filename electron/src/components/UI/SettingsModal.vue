@@ -4,7 +4,7 @@
       <h2>Settings</h2>
       <form @submit.prevent="handleSubmit">
         <div class="form-group">
-          <label for="apiKey">API Key (leave empty if blank)</label>
+          <label for="apiKey">API Key</label>
           <input type="text" id="apiKey" v-model="apiKey" />
         </div>
         <div class="form-group">
@@ -38,7 +38,7 @@
 </template>
 <script>
 import Dexie from "dexie";
-
+import db from "@/db";
 export default {
   name: "SettingsModal",
   data() {
@@ -69,13 +69,10 @@ export default {
       this.$emit("close");
     },
     async saveSettings() {
-      const db = new Dexie("borderland-lmchat-settings");
-      db.version(1).stores({ settings: "id" });
       const settings = {
         id: 1,
         apiKey: this.apiKey,
         url: this.url,
-        model: this.model,
         temperature: this.temperature,
         systemPrompt: this.systemPrompt,
       };
