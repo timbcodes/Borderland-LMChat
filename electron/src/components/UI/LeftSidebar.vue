@@ -98,7 +98,7 @@ export default {
       this.localPreviousChats = await db.chats.toArray();
     },
     async selectChat(chat) {
-      this.$emit("chat-selected", chat.id); // Emit event to parent component
+      this.$emit("chat-selected", chat.uuid); // Emit UUID instead of chat ID
     },
     async deleteChat(chatId) {
       await db.chats.delete(chatId);

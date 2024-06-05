@@ -57,11 +57,13 @@ export default {
   },
   methods: {
     ...mapActions(["closeSettingsModal"]),
-    async loadChatMessages(chatId) {
-      const messages = await db.messages.where({ chatId }).toArray();
-      this.$refs.mainChatView.setMessages(messages);
-      const chat = await db.chats.get(chatId);
-      this.updateCurrentChat(chat);
+    async loadChatMessages(chatUuid) {
+      const chat = await db.chats.where({ uuid: chatUuid }).first();
+      if (chat) {
+        const messages = await db.messages.where({ chatId: chat.id }).toArray();
+        this.updateCurrentChat(chat);
+        this.$refs.mainChatView.setMessages(messages);
+      }
     },
     updateCurrentChat(chat) {
       if (this.currentChat) {
@@ -71,7 +73,9 @@ export default {
       this.previousChats = this.previousChats.filter((c) => c.id !== chat.id);
     },
     addPreviousChat(chat) {
-      this.previousChats.push(chat);
+      if (!this.previousChats.find((c) => c.id === chat.id)) {
+        this.previousChats.push(chat);
+      }
     },
     async createNewChat() {
       if (this.currentChat) {

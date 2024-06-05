@@ -76,6 +76,7 @@ export default {
         text,
         createdAt: new Date(),
       };
+      console.log("Saving message:", newMessage); // Add this line
       await db.messages.add(newMessage);
       this.messages.push(newMessage);
     },
@@ -96,7 +97,9 @@ export default {
       }
     },
     async loadChatMessages(chatId) {
+      console.log(`Loading messages for chatId: ${chatId}`); // Debugging statement
       this.messages = await db.messages.where({ chatId }).toArray();
+      console.log("Loaded messages:", this.messages); // Debugging statement
     },
     setMessages(messages) {
       this.messages = messages;
@@ -119,9 +122,10 @@ export default {
     },
   },
   async mounted() {
+    console.log(db.messages); // Debugging statement
     // Example: Load messages for an existing chat
-    const existingChatId = 1; // Replace with your logic to get an existing chat ID
-    await this.loadChatMessages(existingChatId);
+    // const existingChatId = 1; // Replace with your logic to get an existing chat ID
+    // await this.loadChatMessages(existingChatId);
   },
 };
 </script>
