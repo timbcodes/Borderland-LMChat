@@ -1,34 +1,18 @@
 <template>
   <div class="chat-app">
-    <div v-if="!currentChat && messages.length === 0" class="no-chat-view">
-      <div class="logo-container">
-        <h1>Lumos</h1>
-        <div class="icon-container">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              d="M10 1a6 6 0 0 0-3.815 10.631C7.237 12.5 8 13.443 8 14.456v.644a.75.75 0 0 0 .572.729 6.016 6.016 0 0 0 2.856 0A.75.75 0 0 0 12 15.1v-.644c0-1.013.762-1.957 1.815-2.825A6 6 0 0 0 10 1ZM8.863 17.414a.75.75 0 0 0-.226 1.483 9.066 9.066 0 0 0 2.726 0 .75.75 0 0 0-.226-1.483 7.553 7.553 0 0 1-2.274 0Z"
-            />
-          </svg>
-        </div>
-      </div>
-      <p>What can I help you with today?</p>
-    </div>
-    <div v-else class="chat-messages" ref="chatMessages">
+    <div class="chat-messages" ref="chatMessages">
       <div
         v-for="(msg, index) in messages"
         :key="index"
-        class="chat-message-wrapper"
+        :class="[
+          'chat-message-wrapper',
+          {
+            'user-message': msg.role === 'user',
+            'system-message': msg.role === 'system',
+          },
+        ]"
       >
-        <div
-          :class="[
-            'chat-message',
-            msg.role === 'user' ? 'user-message' : 'system-message',
-          ]"
-        >
+        <div class="chat-message">
           <div class="message-content" v-html="msg.text"></div>
         </div>
       </div>
@@ -59,7 +43,6 @@
 <script>
 import { v4 as uuidv4 } from "uuid";
 import db from "@/db";
-import { parseMarkdown } from "@/js/utils/markdown.utils";
 import axios from "axios";
 
 export default {
@@ -76,7 +59,6 @@ export default {
   methods: {
     async createNewChat() {
       if (this.currentChat) {
-        // Add the current chat to previous chats before creating a new one
         this.$emit("move-to-previous-chats", this.currentChat);
       }
       const newChat = {
@@ -94,21 +76,22 @@ export default {
         role,
         createdAt: new Date(),
       };
-      console.log("Saving message:", newMessage);
       await db.messages.add(newMessage);
-      this.messages.unshift(newMessage); // Add new message at the beginning
+      this.messages.push(newMessage); // Add new message at the end
+      this.scrollToBottom(); // Scroll to the bottom after adding a new message
     },
     async sendMessage() {
       if (this.message.trim() && !this.isLoading) {
         if (!this.currentChat) {
           await this.createNewChat();
         }
-        await this.addMessageToChat(this.message);
-        // Scroll to the bottom of the chat messages
-        this.$nextTick(() => {
-          const chatMessages = this.$refs.chatMessages;
-          chatMessages.scrollTop = chatMessages.scrollHeight;
-        });
+        await this.addMessageToChat(this.message, "user");
+
+        // Prepare the entire message history
+        const messages = this.messages.map((msg) => ({
+          role: msg.role,
+          content: msg.text,
+        }));
 
         this.isLoading = true;
         const settings = await db.settings.get(1);
@@ -117,16 +100,9 @@ export default {
         const temperature = settings ? settings.temperature : 0.7;
         const systemPrompt = settings ? settings.systemPrompt : "";
 
-        const userMessage = this.message.trim(); // Store the user's message in a separate variable
-        const messages = [{ role: "user", content: userMessage }];
         if (systemPrompt) {
           messages.unshift({ role: "system", content: systemPrompt });
         }
-        console.log("Sending messages:", messages); // Debugging statement
-
-        // Clear the message input after storing the user's message
-        this.message = "";
-        this.$refs.chatInput.style.height = "3rem"; // Reset height after sending the message
 
         const requestBody = {
           messages,
@@ -157,32 +133,14 @@ export default {
         }
 
         this.isLoading = false;
-      }
-    },
-    async streamResponse(stream) {
-      const textDecoder = new TextDecoder("utf-8");
-      let messageText = "";
-
-      const reader = stream.getReader();
-      let { value, done } = await reader.read();
-
-      while (!done) {
-        const chunk = textDecoder.decode(value);
-        messageText += chunk;
-
-        // Update the chat message in real-time
-        this.messages[this.messages.length - 1].text =
-          parseMarkdown(messageText);
-
-        ({ value, done } = await reader.read());
+        this.message = ""; // Clear the message input
+        this.$refs.chatInput.style.height = "3rem"; // Reset height after sending the message
       }
     },
     async loadChatMessages(chat) {
-      console.log(`Loading messages for chatId: ${chat.id}`); // Debugging statement
       this.messages = await db.messages.where({ chatId: chat.id }).toArray();
-      this.messages.reverse(); // Reverse to show latest messages at the bottom
-      console.log("Loaded messages:", this.messages); // Debugging statement
       this.currentChat = chat; // Set the current chat
+      this.scrollToBottom(); // Scroll to the bottom after loading messages
     },
     setMessages(messages) {
       this.messages = messages;
@@ -203,6 +161,12 @@ export default {
         textarea.style.height = "3rem"; // Set to 3rem when there's no text
       }
     },
+    scrollToBottom() {
+      this.$nextTick(() => {
+        const chatMessages = this.$refs.chatMessages;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
+    },
   },
   async mounted() {
     const settings = await db.settings.get(1);
@@ -213,7 +177,6 @@ export default {
       this.systemPrompt = settings.systemPrompt;
     } else {
       console.log("Settings not found");
-      // Handle the case when settings are not found, e.g., show an error message or set default values
     }
   },
 };
@@ -228,59 +191,24 @@ export default {
   height: 100%;
   background-color: $ResSmoke;
   font-family: $mainFont;
-  .no-chat-view {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    .logo-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1rem;
-      h1 {
-        font-size: 2rem;
-        font-weight: 700;
-        font-family: "Quicksand", sans-serif;
-        margin-right: 1rem;
-      }
-      .icon-container {
-        background-color: $ResWhite;
-        border-radius: $ResRoundedEdges;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        svg {
-          width: 24px;
-          height: 24px;
-          color: $ResPurple;
-        }
-      }
-    }
-    p {
-      font-size: 1.2rem;
-      font-weight: 400;
-    }
-  }
   .chat-messages {
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
     display: flex;
-    flex-direction: column-reverse; /* Start from bottom and work up */
+    flex-direction: column; /* Use column to stack messages from top to bottom */
+    justify-content: flex-end; /* Ensure messages start from the bottom */
     background-color: $ResSmoke; /* Ensure the background color remains consistent */
     .chat-message-wrapper {
       display: flex;
       flex-direction: column;
+      align-items: flex-end; /* Align user messages to the right */
+      &.system-message {
+        align-items: flex-start; /* Align system messages to the left */
+      }
     }
     .chat-message {
       margin-bottom: 1rem;
-      display: flex;
-      justify-content: flex-end; /* Align user messages to the right */
       .message-content {
         background-color: $ResBlack; /* Dark background for messages */
         border-radius: $ResRoundedEdges;
@@ -288,10 +216,7 @@ export default {
         padding: 0.5rem;
         font-family: $mainFont;
         color: $ResWhite; /* White text color */
-        max-width: 40%; /* Reduce the width of the message bubbles */
-      }
-      &.system-message {
-        justify-content: flex-start; /* Align system messages to the left */
+        max-width: 100%; /* Set the width to 100% */
       }
     }
   }
